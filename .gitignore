@@ -1,0 +1,7 @@
+# files and folders not uploading to github
+
+.env
+logs/
+out/
+ideas/
+notes.txt
