@@ -1,0 +1,12 @@
+{
+  "date": "2025-08-19T14:27:00-04:00",
+  "url": "https://intranet.company.com/",
+  "heading": "Internal Employee Time Tracking System",
+  "main_text": "Internal Employee Time Tracking System\n\nOur company needs a centralized way for employees to clock in/out, log work hours, and request time off. Managers should have clear visibility into schedules, approvals, and compliance reporting. The system reduces reliance on spreadsheets and email, improves accuracy, and ensures labor law compliance across departments.",
+  "trend_analysis": "Trend Analysis\n\nInternal workforce tools are increasingly critical as hybrid and remote work expand. Companies without modern tracking systems risk payroll errors, compliance issues, and inefficient approvals. Building an internal system ensures alignment with company policies while avoiding recurring SaaS costs.",
+  "community_signals": "Community Signals\nInternal employee feedback shows high frustration with manual spreadsheets and email chains. HR and team leads have requested automation for timesheet collection, PTO approvals, and reporting.",
+  "end_anchor": "See full analysis",
+  "end_marker_used": "See full analysis",
+  "full_text": "Internal Project Brief\nAug 19, 2025\n\nInternal Employee Time Tracking System\n\nOur teams currently track hours and PTO using a mix of spreadsheets, email, and manual forms. This creates delays, inconsistencies, and compliance risks. An internal system will provide:\n\n• Employee portal for clock in/out and PTO requests\n• Manager dashboard for approvals and real-time schedule visibility\n• Automated calculations for overtime and accruals\n• Exportable reports for HR and payroll\n\nThis project is not for external sale but to meet internal needs: improving efficiency, accuracy, and compliance. The system will be hosted on company infrastructure and integrated with existing HR and payroll workflows.",
+  "html_sample": "<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>"
+}
