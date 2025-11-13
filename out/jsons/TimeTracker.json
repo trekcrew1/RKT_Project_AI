@@ -1,0 +1,318 @@
+{
+  "meta": {
+    "title": "Timewise — Employee Time & PTO Tracking with Compliance and Payroll Exports",
+    "version": "v0.1",
+    "date": "2025-08-27",
+    "authors": [
+      "Staff PM"
+    ],
+    "status": "draft"
+  },
+  "overview": {
+    "summary": "Build a modern, compliant time and attendance system that replaces spreadsheets and manual forms with an employee portal, manager dashboard, automated overtime and Paid Time Off (PTO) accruals, and exportable reports for Human Resources (HR) and payroll. Architect for multi-tenant Software-as-a-Service (SaaS) to monetize externally, while piloting internally first for speed and fidelity.",
+    "problem_statement": "Manual time tracking via spreadsheets, email, and forms causes inaccuracies, approval delays, poor visibility, and compliance risk (e.g., overtime miscalculation, missing attestations). HR and payroll teams spend excessive time cleaning data and reconciling errors, risking wage-and-hour noncompliance.",
+    "goals": [
+      "Reduce timesheet processing time by 60% vs. current baseline within 3 months of internal launch",
+      "Achieve <1% payroll export error rate during internal pilot",
+      "Provide compliant overtime and PTO accrual calculations configurable per policy",
+      "Enable manager same-day approvals with real-time schedule and exception visibility",
+      "Launch external paid beta within 16–18 weeks with seat-based billing",
+      "Reach $10k ARR within 6 months of external beta through SMB customers"
+    ],
+    "non_goals": [
+      "Full payroll processing (we export to payroll; we do not run payroll)",
+      "Complex workforce scheduling/forecasting (beyond basic shift visibility)",
+      "Union contract adjudication engines",
+      "Biometric hardware time clocks",
+      "Global labor law automation beyond configurable rules and basic presets"
+    ],
+    "background": "Per the Aug 19, 2025 internal brief, the company needs an internal time tracking system with employee clock in/out, PTO requests, manager approvals, automated overtime/accruals, and HR/payroll exports, hosted on company infrastructure and integrated with existing workflows. To create a revenue-generating product, we will build the core to solve internal needs first (single tenant) while designing a secure multi-tenant architecture. After internal validation, we will commercialize as a SaaS offering for small and medium businesses (SMBs), integrating common payroll systems and adding subscription billing."
+  },
+  "market": {
+    "target_users": [
+      "Hourly and salaried employees who submit time and PTO",
+      "People managers who approve time and PTO",
+      "HR/People Operations administrators",
+      "Payroll specialists/accountants",
+      "Finance controllers requiring cost and overtime reporting"
+    ],
+    "personas": [
+      {
+        "name": "Alex, Hourly Employee",
+        "bio": "Retail associate splitting shifts across departments; mobile-first, inconsistent access to desktop.",
+        "pain_points": [
+          "Forget to clock in/out",
+          "Confusing PTO balances",
+          "Unclear overtime status"
+        ],
+        "jobs_to_be_done": [
+          "Clock in/out quickly and accurately",
+          "View hours worked and PTO balance in real time",
+          "Receive reminders for missed punches"
+        ],
+        "success_criteria": [
+          "Clock actions in <5 seconds",
+          "Accurate PTO balance visible at all times",
+          "Mobile-friendly experience"
+        ]
+      },
+      {
+        "name": "Bri, People Manager",
+        "bio": "Manages 10–30 staff with varying shifts, responsible for approvals and coverage.",
+        "pain_points": [
+          "Late timesheets block payroll",
+          "Manual overtime review",
+          "No real-time staffing visibility"
+        ],
+        "jobs_to_be_done": [
+          "Approve time and PTO quickly with exceptions flagged",
+          "See daily/weekly staffing coverage",
+          "Correct missed punches with audit trail"
+        ],
+        "success_criteria": [
+          "Approve a team’s week in <10 minutes",
+          "All exceptions highlighted automatically",
+          "Clear audit logs for corrections"
+        ]
+      },
+      {
+        "name": "Casey, HR/Payroll Admin",
+        "bio": "Owns compliance, exports to payroll (e.g., ADP, Gusto), and audits.",
+        "pain_points": [
+          "Reconciling hours across spreadsheets",
+          "Policy exceptions (meal breaks, overtime)",
+          "Last-minute changes pre-payroll"
+        ],
+        "jobs_to_be_done": [
+          "Automate overtime/PTO accruals per policy",
+          "Export clean CSV to payroll or push via API",
+          "Maintain audit-ready records"
+        ],
+        "success_criteria": [
+          "<1% export error rate",
+          "Configurable rules without engineering changes",
+          "Immutable audit logs"
+        ]
+      }
+    ],
+    "market_size": "Time & attendance software is a multi-billion-dollar global market. SMB-focused TAM in US estimated ~$3–5B annually, driven by ~6M employer firms with ~80M employees; even a niche (1% penetration at $5–8/user/mo) supports $50–$75M ARR opportunity.",
+    "competitors": [
+      "QuickBooks Time (formerly TSheets)",
+      "ADP Time & Attendance",
+      "Rippling Time & Attendance",
+      "BambooHR Time Tracking",
+      "UKG/Kronos",
+      "Deputy",
+      "Clockify",
+      "Toggl Track",
+      "Harvest"
+    ],
+    "differentiation": "Compliance-first and policy-flexible engine with effortless approvals and accurate exports. Faster to deploy than legacy suites; simpler than full HRIS. Strong auditability, PTO accrual flexibility, and pragmatic payroll integrations out-of-the-box."
+  },
+  "requirements": {
+    "user_stories": [
+      "As an employee, I can clock in/out with one tap and see my current shift status.",
+      "As an employee, I can request PTO and see real-time balances and accrual forecasts.",
+      "As a manager, I can review and approve time and PTO with exceptions auto-flagged.",
+      "As HR, I can configure overtime and PTO policies without engineering changes.",
+      "As payroll, I can export a payroll-ready file (CSV) per pay period or push to payroll via API.",
+      "As an admin, I can invite users, set roles, departments, locations, and holidays.",
+      "As an auditor, I can view immutable logs of edits with who/what/when and reason.",
+      "As finance, I can run reports by cost center, location, and overtime category.",
+      "As a customer (external), I can subscribe with seat-based pricing and manage billing.",
+      "As IT, I can enable Single Sign-On (SSO) and enforce Multi-Factor Authentication (MFA)."
+    ],
+    "functional_requirements": [
+      "Authentication: Email+password, SSO (Single Sign-On) via SAML/OIDC with Google/Okta; optional MFA.",
+      "Roles & RBAC (Role-Based Access Control): Employee, Manager, Payroll, HR Admin, Org Admin.",
+      "Time capture: Clock in/out, meal/breaks, notes, missed punch submission; prevent overlapping shifts.",
+      "Timesheets: Daily and weekly views; attestation checkbox; submit/lock after approval.",
+      "PTO: Request/approve/deny; balances with accrual policies (accrual rates, caps, carryover, waiting periods).",
+      "Policy engine: Configurable overtime rules (daily/weekly, thresholds), meal/rest penalty rules, holiday/overtime pay multipliers.",
+      "Scheduling basics: View assigned shifts and coverage summary; not a full scheduler.",
+      "Approvals: Manager queue with exception flags (missed punch, overtime, policy violations). Bulk approve/deny.",
+      "Notifications: Email and in-app for pending approvals, missing timesheets, low PTO balance.",
+      "Reporting: Standard reports (hours by employee/department, overtime, PTO balances, exceptions). Export CSV; schedule exports.",
+      "Payroll integrations: CSV templates for ADP, Gusto, Paychex, QuickBooks Payroll; API pushes where available.",
+      "HRIS import: Employee roster sync via CSV or API (BambooHR, Rippling) with mapping and deprovisioning.",
+      "Audit logs: Immutable logs for time edits, approvals, policy changes; reason codes.",
+      "Localization: Time zones, locale formatting; company holiday calendars.",
+      "Multi-tenant architecture: Data isolation by tenant; org-level configuration.",
+      "Billing: Seat-based subscriptions via Stripe; plan management; proration; invoices; dunning.",
+      "Admin: Org settings, departments, locations, cost centers, holidays; data retention settings.",
+      "Security & compliance: Encryption in transit/at rest, least-privilege access, PII (Personally Identifiable Information) minimization.",
+      "Data lifecycle: Backups, export, deletion requests; retention policies.",
+      "APIs: Admin and reporting APIs (read), webhook for events (timesheet approved, PTO approved).",
+      "Device support: Responsive web app; mobile web optimized; consider native mobile later."
+    ],
+    "nonfunctional_requirements": [
+      "Performance: P95 page load <2s on broadband; bulk export (10k rows) <30s.",
+      "Availability: 99.9% monthly uptime for SaaS; scheduled maintenance windows communicated 72h prior.",
+      "Scalability: Support 10k active users per tenant; 100 tenants in year 1.",
+      "Security: TLS 1.2+; AES-256 at rest; SOC 2 readiness within 12 months; regular pen tests.",
+      "Privacy: GDPR/CCPA-aligned data handling; data residency documented; DPA available.",
+      "Auditability: All time edits and approvals logged with actor, timestamp, before/after, reason.",
+      "Reliability: RPO (Recovery Point Objective) ≤ 1 hour; RTO (Recovery Time Objective) ≤ 4 hours.",
+      "Browser support: Last 2 versions of Chrome, Edge, Safari, Firefox.",
+      "Accessibility: WCAG 2.1 AA compliance.",
+      "Observability: Centralized logging, metrics, alerting (errors, latency, export failures)."
+    ],
+    "ux_principles": [
+      "Frictionless primary actions: clock, request PTO, approve.",
+      "Clarity and transparency: show totals, balances, and rules plainly.",
+      "Exception-first management: highlight issues; enable bulk resolution.",
+      "Trust and auditability: visible attestations and change reasons.",
+      "Mobile-friendly: responsive layouts and large tap targets.",
+      "Progressive disclosure: keep advanced settings out of the way."
+    ],
+    "accessibility": "Keyboard navigable, form labels tied to inputs, ARIA roles on dynamic components, sufficient color contrast (≥4.5:1 normal text), focus states, error messages programmatically associated, avoid time-based form expiry during active entry, support screen readers (NVDA/JAWS/VoiceOver).",
+    "dependencies": [
+      "Payroll APIs/CSV specs (ADP, Gusto, Paychex, QuickBooks Payroll)",
+      "HRIS APIs for roster sync (BambooHR, Rippling, Workday-lite via CSV)",
+      "Identity provider (Okta, Google Workspace) for SSO",
+      "Stripe for billing and invoicing",
+      "Email provider (e.g., SendGrid) for transactional emails",
+      "Infrastructure: cloud hosting, managed DB with encryption, object storage for exports",
+      "Legal review for labor law presets and privacy terms"
+    ],
+    "open_questions": [
+      "Which labor jurisdictions must be supported first (e.g., US FLSA (Fair Labor Standards Act), California meal/rest, EU Working Time Directive)?",
+      "Do we require geofencing or IP-based restrictions for clock actions at launch?",
+      "Are break and meal punches mandatory for all teams or policy-driven optional?",
+      "What PTO policies must be modeled for launch (accrual frequencies, caps, carryover rules)?",
+      "What is the minimum viable set of payroll integrations for external beta (one-click API vs CSV only)?",
+      "Do managers need shift assignment features or only visibility for Phase 1?",
+      "Internal deployment model: single-tenant instance vs same SaaS with private tenant?",
+      "Data retention defaults (e.g., 4 years vs 7 years) per legal guidance?"
+    ]
+  },
+  "delivery": {
+    "milestones": [
+      {
+        "name": "M0: Discovery, Policy Modeling, and UX Prototypes",
+        "scope": "Interview internal HR/payroll, collect baseline data and policies, define overtime/PTO rule schema, design core flows (clock, PTO, approvals, exports).",
+        "duration_weeks": 2,
+        "acceptance_criteria": [
+          "Documented internal policies and payroll export formats",
+          "Clickable prototypes validated by 5+ internal users with SUS ≥75",
+          "Defined data model for time entries, PTO, policies, and audit logs"
+        ]
+      },
+      {
+        "name": "M1: Internal MVP (Single Tenant)",
+        "scope": "Core web app for employees/managers/admins; policy engine v1; CSV export; basic HRIS import; audit logs; email notifications.",
+        "duration_weeks": 6,
+        "acceptance_criteria": [
+          "Employees can clock in/out and submit weekly timesheets; P95 clock action <1s",
+          "Managers approve timesheets and PTO; exception flags visible",
+          "PTO balances computed with at least one accrual policy (rate, cap, carryover)",
+          "Overtime calculated per configured daily/weekly thresholds",
+          "Payroll CSV export matches internal template with <1% error in test run",
+          "Immutable audit logs present for edits and approvals",
+          "Admin can import roster via CSV and assign roles/locations",
+          "Basic SSO with Google enabled for internal users"
+        ]
+      },
+      {
+        "name": "M2: Multi-Tenant SaaS Readiness",
+        "scope": "Tenant isolation, org settings, billing scaffolding, observability, data retention controls.",
+        "duration_weeks": 4,
+        "acceptance_criteria": [
+          "Data isolation verified via automated tests; no cross-tenant data access",
+          "Org-level configuration for policies, holidays, departments operational",
+          "Metrics and alerting in place for errors, latency, export failures",
+          "Backups configured; RPO ≤1h, RTO ≤4h validated in drill",
+          "Basic pricing plans defined in app without checkout"
+        ]
+      },
+      {
+        "name": "M3: External Paid Beta",
+        "scope": "Stripe billing integration, onboarding flow, at least one live payroll API push (e.g., Gusto), help content, privacy/terms.",
+        "duration_weeks": 4,
+        "acceptance_criteria": [
+          "Stripe checkout live with seat-based pricing, trials, proration, dunning",
+          "Self-serve onboarding: invite users, set policies, first payroll export in <1 day",
+          "Gusto API push sends approved hours with success receipts",
+          "Transactional emails (invites, approvals, reminders) meet deliverability ≥98%",
+          "Privacy policy, Terms of Service, DPA published; SOC 2 roadmap documented"
+        ]
+      },
+      {
+        "name": "M4: GA (General Availability) + Reporting",
+        "scope": "Hardened reporting suite, additional payroll templates, performance tuning, support processes, SLA (Service Level Agreement) docs.",
+        "duration_weeks": 6,
+        "acceptance_criteria": [
+          "Standard reports (hours, overtime, PTO balances, exceptions) export in <30s for 10k rows",
+          "Support workflows and help center live; first-response SLA ≤1 business day",
+          "Uptime 99.9% for rolling 30 days during soft-launch",
+          "Two additional payroll CSV templates added (ADP, QuickBooks)",
+          "Net Promoter Score (NPS) ≥30 among beta tenants (n≥10)"
+        ]
+      }
+    ],
+    "timeline_weeks_total": 22,
+    "team": [
+      "1 Product Manager",
+      "1 Product Designer",
+      "2 Frontend Engineers",
+      "2 Backend Engineers",
+      "1 QA Engineer",
+      "1 DevOps/SRE",
+      "0.2 Legal/Compliance (contract)"
+    ],
+    "resources": [
+      "Cloud environment (staging, production) with VPC and secrets manager",
+      "Managed SQL database with encryption at rest",
+      "Object storage for reports/exports",
+      "Logging/monitoring (e.g., Datadog/ELK)",
+      "Email service (SendGrid/Postmark)",
+      "Stripe account and test environment",
+      "Payroll and HRIS sandbox accounts",
+      "Design system components"
+    ],
+    "risks": [
+      {
+        "risk": "Incorrect policy calculations create wage-and-hour liability.",
+        "mitigation": "Policy rule engine with unit tests; legal review of presets; require attestation; clear exception reports."
+      },
+      {
+        "risk": "Integration fragility with payroll/HRIS APIs.",
+        "mitigation": "Start with robust CSV templates; add 1–2 API integrations with retries, idempotency, and monitoring."
+      },
+      {
+        "risk": "Low adoption due to behavior change (forgetting to clock).",
+        "mitigation": "Reminders, nudges, and mobile-friendly UI; missed punch workflows; manager dashboards highlighting omissions."
+      },
+      {
+        "risk": "Data privacy and PII exposure.",
+        "mitigation": "Encryption, RBAC, least privilege, audit logs, regular access reviews, breach response plan."
+      },
+      {
+        "risk": "Scope creep into full scheduling and payroll.",
+        "mitigation": "Firm non-goals; phased roadmap; customer advisory board to prioritize."
+      },
+      {
+        "risk": "Billing/leakage or churn during beta.",
+        "mitigation": "Simple plans, transparent limits, in-app value metrics, onboarding assistance, dunning."
+      }
+    ]
+  },
+  "gtm": {
+    "pricing": "Seat-based monthly per active user: Starter $4/user/mo (time, PTO, CSV exports); Pro $6/user/mo (policy engine, exceptions, scheduled reports); Premium $8/user/mo (SSO, API/webhooks, advanced reporting). Annual discount 15%. Free 14-day trial.",
+    "channels": [
+      "Product-led growth: free trial, in-app onboarding",
+      "Content/SEO on compliance topics (overtime, PTO laws)",
+      "Payroll/HRIS marketplaces (QuickBooks, Gusto, BambooHR)",
+      "Partnerships with accountants and fractional HR consultants",
+      "Outbound to SMBs (20–500 employees) in retail, services, light manufacturing"
+    ],
+    "positioning": "Compliance-first time tracking that’s simple to deploy and trusted by HR and payroll. Fast, accurate, and audit-ready without buying a full HR suite.",
+    "kpis": [
+      "Internal: Processing time per pay cycle (target -60%); payroll export error rate (<1%); manager approval SLA (<24h).",
+      "Product: Weekly Active Users (WAU)/Monthly Active Users (MAU), activation rate (orgs to first payroll export within 7 days ≥60%).",
+      "Revenue: Trial-to-paid conversion ≥20%; ARPU (Average Revenue Per User) ≥$5.50; Gross churn <3% monthly; ARR (Annual Recurring Revenue) milestones ($10k in 6 months).",
+      "Reliability: Uptime ≥99.9%; export success rate ≥99%.",
+      "Support: First-response time ≤1 business day; CSAT ≥4.3/5."
+    ]
+  }
+}
