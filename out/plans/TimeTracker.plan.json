@@ -1,0 +1,1032 @@
+{
+  "meta": {
+    "source_prd": "ideas\\TimeTracker.json",
+    "title": "Internal Employee Time Tracking System — End-to-End Execution Plan",
+    "generated_at": "2025-08-28T00:00:00Z",
+    "model": "gpt-4o",
+    "total_steps": 18,
+    "est_total_duration_days": 91.7,
+    "version": "1.0"
+  },
+  "steps": [
+    {
+      "number": 1,
+      "title": "PRE-FLIGHT — Labor law and policy compliance validation",
+      "objective": "Validate that labor laws and company policies can be faithfully implemented in system rules across all operating locations",
+      "detailed_instructions": [
+        "Owner schedules 60-minute working session with HR Business Partner (HRBP) and Legal Counsel to enumerate jurisdictions (countries, states/provinces, cities) where employees are paid.",
+        "Collect current policy documents for overtime, meal/rest breaks, rounding rules, grace periods, holiday calendars, Paid Time Off (PTO) accrual formulas, carryover, caps, and probation rules.",
+        "Document required audit artifacts for compliance: who/what/when/where for each time event; edit history; approval chains; retention period.",
+        "Decide time rounding policy (e.g., 5/6/15-minute rules), lockout windows, and exception workflows for missed punches.",
+        "Confirm applicability of the Fair Labor Standards Act (FLSA — Fair Labor Standards Act) and local equivalents; identify exempt vs non-exempt categories.",
+        "Produce a Policy-to-Engine Mapping spreadsheet listing each rule with system parameterization approach (inputs, formulas, effective dates).",
+        "Confirm retention and right-to-access/erasure requirements (by region) for Personally Identifiable Information (PII — Personally Identifiable Information)."
+      ],
+      "prerequisites": [],
+      "inputs": [
+        "Current HR policy handbook PDFs",
+        "Jurisdiction list from HR",
+        "Historical timesheet samples (redacted)"
+      ],
+      "outputs": [
+        "Signed Policy-to-Engine Mapping (spreadsheet)",
+        "Jurisdiction coverage matrix (document)",
+        "Retention and audit requirements (document)"
+      ],
+      "owner_role": "Product Manager",
+      "collaborators": [
+        "HR Business Partner",
+        "Legal Counsel"
+      ],
+      "time_estimate_hours_min": 12.0,
+      "time_estimate_hours_max": 20.0,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Policy-to-Engine Mapping is signed by HR and Legal",
+        "Jurisdiction coverage matrix completed with no unknowns",
+        "Retention/audit requirements approved",
+        "Go/No-Go: Go only if all required policies are mapped with no blocking unknowns; otherwise No-Go"
+      ],
+      "risks": [
+        {
+          "risk": "Undocumented local labor rules prevent accurate implementation",
+          "mitigation": "Limit initial launch to confirmed jurisdictions; add feature flag by location and phase rollout"
+        },
+        {
+          "risk": "Conflicting policies across departments",
+          "mitigation": "Escalate to HR leadership for standardization; implement department-level overrides only where legally required"
+        }
+      ],
+      "notes": "Acronyms introduced: PTO (Paid Time Off), FLSA (Fair Labor Standards Act), PII (Personally Identifiable Information)."
+    },
+    {
+      "number": 2,
+      "title": "PRE-FLIGHT — Payroll and HRIS integration feasibility",
+      "objective": "Decide and validate integration method with payroll and HRIS (Human Resources Information System) for imports/exports",
+      "detailed_instructions": [
+        "Identify payroll system (e.g., ADP, Workday, UKG); confirm whether we will integrate via API (Application Programming Interface) or CSV (Comma-Separated Values) over SFTP (Secure File Transfer Protocol).",
+        "Request sandbox or non-prod credentials from vendor; if file-based, request sample import/export specs and data dictionaries.",
+        "Confirm file layouts: required columns, date/time formats, time zone expectations, rounding and overtime fields, department/job codes.",
+        "Validate transfer mechanism: obtain SFTP hostname, port, username, SSH public key; complete firewall allow-listing if needed.",
+        "Confirm processing windows, submission deadlines, and Service Level Agreements (SLAs — Service Level Agreements) for payroll cutoffs.",
+        "Run a no-code connectivity test: SFTP login using sftp -i <key> <user>@<host> (or vendor UI) and list directories; for API, use Postman to hit /health or /version endpoints with sandbox token.",
+        "Document rate limits, pagination, and batch size constraints; define fallback file format if API limits are too strict."
+      ],
+      "prerequisites": [],
+      "inputs": [
+        "Vendor technical guides and data dictionaries",
+        "Company SFTP key pair (if file-based)",
+        "Vendor sandbox/API access form"
+      ],
+      "outputs": [
+        "Sandbox API keys or SFTP credentials",
+        "Validated sample CSV files and mapping document",
+        "Integration decision (API vs CSV/SFTP) and submission schedule"
+      ],
+      "owner_role": "Technical Program Manager",
+      "collaborators": [
+        "HRIS Administrator",
+        "Payroll Lead",
+        "Vendor Integration Manager"
+      ],
+      "time_estimate_hours_min": 10.0,
+      "time_estimate_hours_max": 16.0,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Successful SFTP directory list or API health call with sandbox credentials",
+        "Signed Integration Decision document with file specs or API endpoints, rate limits, and schedule",
+        "Go/No-Go: Go only if sandbox access or sample files and transfer path are verified; otherwise No-Go"
+      ],
+      "risks": [
+        {
+          "risk": "Vendor sandbox access delayed",
+          "mitigation": "Proceed with validated sample files and build export adapters; schedule live API work post-access"
+        },
+        {
+          "risk": "API rate limits too restrictive for payroll cutoffs",
+          "mitigation": "Use scheduled CSV exports via SFTP as primary; API for incremental updates"
+        }
+      ],
+      "notes": "Acronym introduced: HRIS (Human Resources Information System), API (Application Programming Interface), CSV (Comma-Separated Values), SFTP (Secure File Transfer Protocol), SLA (Service Level Agreement)."
+    },
+    {
+      "number": 3,
+      "title": "PRE-FLIGHT — Identity and access via SSO decision",
+      "objective": "Validate Single Sign-On (SSO — single sign-on) with the corporate Identity Provider (IdP — Identity Provider) and confirm role/group strategy",
+      "detailed_instructions": [
+        "Engage IT Identity and Access Management (IAM) to confirm supported protocols: OIDC (OpenID Connect)/OAuth 2.0 for authentication; SCIM (System for Cross-domain Identity Management) for provisioning (if used).",
+        "Register the application in the IdP: collect Client ID, Client Secret, Authorization/Token endpoints, JWKS URL, and metadata; define redirect URIs for dev/stage/prod.",
+        "Define group-to-role mappings (Employee, Manager, HRAdmin, SysAdmin) using existing directory groups; decide if dynamic claims will be used.",
+        "Test authorization code flow without coding using Postman or IdP’s built-in test client to obtain an ID token; inspect claims for email, groups, and unique ID.",
+        "Decide on Multi-Factor Authentication (MFA — Multi-Factor Authentication) policy (IdP-enforced).",
+        "If SCIM is in scope, obtain SCIM base URL and token; verify a read-only /Users call via curl to confirm schema."
+      ],
+      "prerequisites": [],
+      "inputs": [
+        "IdP admin contact",
+        "Existing directory group inventory",
+        "Security baseline requirements"
+      ],
+      "outputs": [
+        "OIDC client registration details (client ID/secret, endpoints)",
+        "Group-to-role mapping document",
+        "Optional SCIM token and base URL"
+      ],
+      "owner_role": "IT IAM Lead",
+      "collaborators": [
+        "Security Lead",
+        "Engineering Lead"
+      ],
+      "time_estimate_hours_min": 8.0,
+      "time_estimate_hours_max": 16.0,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Successful test OIDC authorization code flow returning ID token with required claims",
+        "Group-to-role mapping approved by HR and Security",
+        "MFA policy documented",
+        "Go/No-Go: Go only if OIDC + group claims are verified and app is registered; otherwise No-Go"
+      ],
+      "risks": [
+        {
+          "risk": "Groups not consistently assigned across org",
+          "mitigation": "Adopt default role = Employee; build admin role elevation workflow; schedule directory cleanup"
+        },
+        {
+          "risk": "SCIM unavailable",
+          "mitigation": "Use periodic directory export and sync job via API/CSV"
+        }
+      ],
+      "notes": "Acronyms introduced: SSO (single sign-on), IdP (Identity Provider), OIDC (OpenID Connect), SCIM (System for Cross-domain Identity Management), MFA (Multi-Factor Authentication)."
+    },
+    {
+      "number": 4,
+      "title": "PRE-FLIGHT — Security, privacy, and DPIA approval",
+      "objective": "Obtain Security and Privacy approval including DPIA (Data Protection Impact Assessment) and encryption/logging standards",
+      "detailed_instructions": [
+        "Complete DPIA with Data Protection Officer: list data elements (names, emails, employee IDs, IP addresses, location if used), purposes, retention, and access.",
+        "Perform high-level threat model: auth flows, privilege escalation, time-edit fraud; specify mitigations (RBAC — Role-Based Access Control, audit trails, anomaly alerts).",
+        "Define encryption standards: TLS 1.2+ in transit; AES-256 at rest; key management via KMS or Vault; backup encryption.",
+        "Define audit logging scope: user ID, action, timestamp (UTC — Coordinated Universal Time), IP, user agent; edit diffs for time entries; retention and access controls.",
+        "Confirm data subject rights process (access/rectification/deletion) per region.",
+        "Get Security sign-off on vulnerability management (SAST/DAST cadence), dependency scanning, and patch SLAs."
+      ],
+      "prerequisites": [
+        "Outputs from steps 1 and 3"
+      ],
+      "inputs": [
+        "Policy-to-Engine Mapping",
+        "IdP/OIDC details",
+        "Corporate security baseline"
+      ],
+      "outputs": [
+        "Approved DPIA",
+        "Security/privacy checklist with sign-off",
+        "Audit and encryption standards document"
+      ],
+      "owner_role": "Security Lead",
+      "collaborators": [
+        "Privacy Officer",
+        "Engineering Lead"
+      ],
+      "time_estimate_hours_min": 10.0,
+      "time_estimate_hours_max": 20.0,
+      "dependencies": [
+        1,
+        3
+      ],
+      "acceptance_criteria": [
+        "DPIA approved by Privacy",
+        "Security checklist approved with no high-risk exceptions",
+        "Go/No-Go: Go only if DPIA and security checklist are approved; otherwise No-Go"
+      ],
+      "risks": [
+        {
+          "risk": "High-risk finding (e.g., location tracking not justified)",
+          "mitigation": "Disable geolocation; use IP-only or none; update DPIA and proceed"
+        },
+        {
+          "risk": "Audit scope too heavy for storage/budget",
+          "mitigation": "Tiered audit retention with cold storage beyond 1 year"
+        }
+      ],
+      "notes": "Acronyms introduced: DPIA (Data Protection Impact Assessment), RBAC (Role-Based Access Control), TLS (Transport Layer Security), AES (Advanced Encryption Standard), UTC (Coordinated Universal Time), SAST (Static Application Security Testing), DAST (Dynamic Application Security Testing)."
+    },
+    {
+      "number": 5,
+      "title": "PRE-FLIGHT — Infrastructure and budget readiness",
+      "objective": "Validate hosting environment, database, monitoring/logging availability, and cost center approval before build",
+      "detailed_instructions": [
+        "Choose target runtime: Kubernetes (K8s) or VM; confirm dev/stage/prod environments and network segmentation.",
+        "Reserve PostgreSQL instance sizes for each environment; confirm automated backups and restore testing cadence.",
+        "Confirm access to monitoring (Prometheus/Grafana) and logging (e.g., ELK or Splunk) stacks; ensure OpenTelemetry collectors are available.",
+        "Validate secret management (Vault/KMS) and process for rotating credentials.",
+        "Obtain cloud budget approval and tag schema for cost allocation.",
+        "Provision non-production namespaces/resource groups and create service accounts; do not deploy app yet."
+      ],
+      "prerequisites": [],
+      "inputs": [
+        "Cloud account/project",
+        "Cost center and budget owner",
+        "Ops runbook templates"
+      ],
+      "outputs": [
+        "Provisioned dev/stage/prod namespaces or resource groups",
+        "Reserved PostgreSQL databases and connection strings (non-prod)",
+        "Budget approval email/document"
+      ],
+      "owner_role": "DevOps Engineer",
+      "collaborators": [
+        "FinOps Lead",
+        "SRE Lead"
+      ],
+      "time_estimate_hours_min": 8.0,
+      "time_estimate_hours_max": 16.0,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Dev/stage/prod infra placeholders created and documented",
+        "Database instances reserved and reachable from app subnets (connectivity test via psql)",
+        "Budget approval recorded",
+        "Go/No-Go: Go only if environments and DBs are ready and budget approved; otherwise No-Go"
+      ],
+      "risks": [
+        {
+          "risk": "Insufficient cluster capacity",
+          "mitigation": "Scale node pools or choose VM deployment temporarily"
+        },
+        {
+          "risk": "Budget constraints",
+          "mitigation": "Reduce initial environment sizes; defer HA to phase 2"
+        }
+      ],
+      "notes": "Acronym introduced: K8s (Kubernetes), ELK (Elasticsearch/Logstash/Kibana), KMS (Key Management Service), SRE (Site Reliability Engineering), FinOps (Cloud Financial Operations)."
+    },
+    {
+      "number": 6,
+      "title": "PRE-FLIGHT — Reporting and audit requirements confirmation",
+      "objective": "Confirm report catalog, metrics, and audit fields required by HR, Payroll, and Compliance",
+      "detailed_instructions": [
+        "Workshop with HR, Payroll, and Compliance to define the report list: pay period timesheets, overtime summaries, PTO balances, exceptions, approvals, and change logs.",
+        "Define filters, grouping, export formats (CSV, XLSX), and delivery schedule (on-demand vs scheduled).",
+        "Confirm required audit fields and retention periods for each report.",
+        "Identify any regulatory filing needs (e.g., state break compliance reports)."
+      ],
+      "prerequisites": [
+        "Outputs from step 1"
+      ],
+      "inputs": [
+        "Historical report examples",
+        "Policy-to-Engine Mapping",
+        "Payroll provider specs"
+      ],
+      "outputs": [
+        "Signed Report Catalog (specification) with layout samples",
+        "Audit field checklist for reporting"
+      ],
+      "owner_role": "Product Manager",
+      "collaborators": [
+        "Payroll Lead",
+        "Compliance Officer",
+        "Data Analyst"
+      ],
+      "time_estimate_hours_min": 6.0,
+      "time_estimate_hours_max": 10.0,
+      "dependencies": [
+        1
+      ],
+      "acceptance_criteria": [
+        "Report Catalog approved by HR and Payroll",
+        "Audit field checklist signed by Compliance",
+        "Go/No-Go: Go only if reports and audit fields are specified; otherwise No-Go"
+      ],
+      "risks": [
+        {
+          "risk": "Overly broad report scope inflates build",
+          "mitigation": "Rank reports by business criticality and phase the remainder"
+        },
+        {
+          "risk": "Export format mismatches payroll",
+          "mitigation": "Validate using vendor sandbox import before build commitment"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "number": 7,
+      "title": "PRE-FLIGHT — Time source, timezone, and geolocation policy decision",
+      "objective": "Decide authoritative time source, timezone handling, and whether geolocation/IP restrictions will be enforced",
+      "detailed_instructions": [
+        "Select Network Time Protocol (NTP — Network Time Protocol) servers (corporate or pool.ntp.org) as authoritative time source; confirm client sync policy.",
+        "Adopt UTC (Coordinated Universal Time) for storage; display in user’s local timezone with clear indicators.",
+        "Decide geolocation policy: none, IP-based hints, or browser geolocation with consent; determine if on-premises IP ranges gate clock-in.",
+        "Run a latency and drift spot check from typical office/home networks: ntpdate -q <server> or chronyc tracking and record drift."
+      ],
+      "prerequisites": [
+        "Outputs from step 1"
+      ],
+      "inputs": [
+        "IT network standards",
+        "Security/privacy constraints from DPIA"
+      ],
+      "outputs": [
+        "Time/Timezone/Geo Policy document",
+        "NTP drift test logs and results"
+      ],
+      "owner_role": "Engineering Lead",
+      "collaborators": [
+        "IT Network Engineer",
+        "Security Lead"
+      ],
+      "time_estimate_hours_min": 4.0,
+      "time_estimate_hours_max": 8.0,
+      "dependencies": [
+        1,
+        4
+      ],
+      "acceptance_criteria": [
+        "Policy document signed by Security and HR",
+        "NTP drift within acceptable threshold (<100ms) on sample tests",
+        "Go/No-Go: Go only if policy is approved and drift acceptable; otherwise No-Go"
+      ],
+      "risks": [
+        {
+          "risk": "NTP drift causes punch disputes",
+          "mitigation": "Display server time in UI; log server timestamp and client timezone explicitly"
+        },
+        {
+          "risk": "Geo policy rejected by Privacy",
+          "mitigation": "Disable geolocation; rely on supervisor attestations and audit"
+        }
+      ],
+      "notes": "Acronym introduced: NTP (Network Time Protocol), UTC (Coordinated Universal Time)."
+    },
+    {
+      "number": 8,
+      "title": "PRE-FLIGHT — Accessibility and browser support policy",
+      "objective": "Define accessibility target and supported browsers/locales for the web application",
+      "detailed_instructions": [
+        "Set accessibility compliance target: WCAG 2.2 AA (Web Content Accessibility Guidelines) and ADA (Americans with Disabilities Act) considerations.",
+        "Define supported browsers/versions (e.g., last 2 versions of Chrome, Edge, Safari; Firefox ESR) and mobile responsiveness expectations.",
+        "Decide initial locales and date/time formats; confirm localization requirements with HR for multi-region teams.",
+        "Agree on automated accessibility testing tooling (axe-core) and manual testing strategy."
+      ],
+      "prerequisites": [],
+      "inputs": [
+        "Corporate accessibility standards, if any",
+        "Employee locale distribution"
+      ],
+      "outputs": [
+        "Accessibility and Browser Support Standards (document)",
+        "Localization strategy outline"
+      ],
+      "owner_role": "UX Designer",
+      "collaborators": [
+        "Product Manager",
+        "QA Lead"
+      ],
+      "time_estimate_hours_min": 4.0,
+      "time_estimate_hours_max": 8.0,
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Standards document approved by Product and Compliance",
+        "Tooling choice documented (axe-core)",
+        "Go/No-Go: Go only if standards are approved; otherwise No-Go"
+      ],
+      "risks": [
+        {
+          "risk": "Legacy browsers in use by some teams",
+          "mitigation": "Provide lightweight fallback views and document minimum versions; target progressive enhancement"
+        },
+        {
+          "risk": "Localization scope creep",
+          "mitigation": "Start with English; design i18n-ready UI and add locales in later phase"
+        }
+      ],
+      "notes": "Acronyms introduced: WCAG (Web Content Accessibility Guidelines), ADA (Americans with Disabilities Act), ESR (Extended Support Release), i18n (internationalization)."
+    },
+    {
+      "number": 9,
+      "title": "Architecture, repository, CI/CD, environments, and observability baseline",
+      "objective": "Establish codebase structure, automated pipelines, containerization, non-prod environments, and baseline observability",
+      "detailed_instructions": [
+        "Create a mono-repo in GitHub: apps/backend (NestJS, Node.js/TypeScript), apps/frontend (React/TypeScript with Vite), infra/ (Helm charts, Terraform).",
+        "Initialize backend with NestJS: npx @nestjs/cli new timetracker-api; add Prisma ORM: npm i prisma @prisma/client; npx prisma init.",
+        "Initialize frontend with Vite React TS: npm create vite@latest timetracker-web -- --template react-ts.",
+        "Create Dockerfiles for backend and frontend; multi-stage builds with non-root user.",
+        "Set up GitHub Actions workflows: build, test, container scan (Trivy), push to registry; deploy to dev via Helm.",
+        "Provision dev/stage namespaces (from step 5) and configure per-env secrets via Vault/KMS; store only placeholders in repo.",
+        "Install OpenTelemetry SDKs; configure traces/metrics to Prometheus/Grafana; set up log shipping to ELK/Splunk.",
+        "Create base health endpoints and deploy “Hello World” to dev to validate CI/CD end-to-end."
+      ],
+      "prerequisites": [
+        "Outputs from steps 5 and 4"
+      ],
+      "inputs": [
+        "Provisioned namespaces and DB connection strings",
+        "Security baseline requirements",
+        "OIDC details for future integration"
+      ],
+      "outputs": [
+        "GitHub repository with CI/CD pipelines",
+        "Container images published to registry",
+        "Deployed baseline services in dev with dashboards"
+      ],
+      "owner_role": "Engineering Lead",
+      "collaborators": [
+        "DevOps Engineer",
+        "Security Lead"
+      ],
+      "time_estimate_hours_min": 16.0,
+      "time_estimate_hours_max": 32.0,
+      "dependencies": [
+        5,
+        4
+      ],
+      "acceptance_criteria": [
+        "CI pipeline green on PRs; images built and scanned with no high-severity issues",
+        "Dev environment reachable; health checks pass; dashboards show traces/metrics/logs",
+        "Definition of Done (DoD): Hello World app deployed via pipeline to dev"
+      ],
+      "risks": [
+        {
+          "risk": "Pipeline instability delays team velocity",
+          "mitigation": "Keep pipeline minimal initially; add caching and parallel steps later"
+        },
+        {
+          "risk": "Observability misconfigured hides issues",
+          "mitigation": "Add synthetic check and alert on failed health endpoints"
+        }
+      ],
+      "notes": "Acronyms: CI/CD (Continuous Integration/Continuous Deployment), ELK (Elasticsearch/Logstash/Kibana)."
+    },
+    {
+      "number": 10,
+      "title": "Data model and migrations (PostgreSQL)",
+      "objective": "Design the relational schema and implement migrations with seed data, including audit-ready fields",
+      "detailed_instructions": [
+        "Design ERD covering: Employee, Department, Role, Policy, Holiday, TimeEntry, Shift (optional), PTORequest, AccrualBalance, Approval, AuditEvent, ExportJob.",
+        "Implement schema with Prisma: define models with created_at, updated_at, created_by, updated_by, and tenant/org fields if needed.",
+        "Generate and run migrations: npx prisma migrate dev --name init_schema; verify in dev DB via psql.",
+        "Seed reference data: default roles (Employee, Manager, HRAdmin, SysAdmin), holidays, test employees (non-PII).",
+        "Create DB indexes for common filters (employee_id+work_date, manager_id+status)."
+      ],
+      "prerequisites": [
+        "Step 1 Policy-to-Engine Mapping",
+        "Step 6 Report Catalog"
+      ],
+      "inputs": [
+        "Policy-to-Engine Mapping spreadsheet",
+        "Report catalog requirements"
+      ],
+      "outputs": [
+        "Prisma schema and migration files",
+        "Applied dev database schema with seed data",
+        "ERD diagram (PNG/PDF)"
+      ],
+      "owner_role": "Backend Engineer",
+      "collaborators": [
+        "Data Analyst",
+        "Engineering Lead"
+      ],
+      "time_estimate_hours_min": 12.0,
+      "time_estimate_hours_max": 24.0,
+      "dependencies": [
+        1,
+        6,
+        9
+      ],
+      "acceptance_criteria": [
+        "Migrations apply cleanly in dev and stage",
+        "Schema fields satisfy policy/report requirements",
+        "Seed data enables end-to-end flows in dev"
+      ],
+      "risks": [
+        {
+          "risk": "Schema churn from late policy changes",
+          "mitigation": "Use feature flags and policy tables with effective_date to reduce breaking changes"
+        },
+        {
+          "risk": "Performance issues on large reports",
+          "mitigation": "Add materialized views for reporting in Phase 2 if needed"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "number": 11,
+      "title": "Authentication and RBAC with SSO (OIDC)",
+      "objective": "Integrate IdP via OIDC for login and implement role-based authorization across services",
+      "detailed_instructions": [
+        "Configure backend OIDC client using values from step 3; implement authorization code flow and session/token validation (JWT — JSON Web Token).",
+        "Map IdP groups to app roles; implement RBAC middleware/guards in NestJS to protect routes by role/permission.",
+        "Implement logout and token refresh; set secure cookie flags and SameSite=strict; rely on IdP-enforced MFA.",
+        "Add audit events for login/logout and role elevation attempts."
+      ],
+      "prerequisites": [
+        "Step 3 OIDC client registration",
+        "Step 4 security checklist"
+      ],
+      "inputs": [
+        "OIDC endpoints, client ID/secret, JWKS URL",
+        "Group-to-role mapping"
+      ],
+      "outputs": [
+        "Working SSO login flow in dev",
+        "RBAC middleware and sample protected routes",
+        "Audit events for auth flows"
+      ],
+      "owner_role": "Backend Engineer",
+      "collaborators": [
+        "IT IAM Lead",
+        "Security Lead"
+      ],
+      "time_estimate_hours_min": 12.0,
+      "time_estimate_hours_max": 24.0,
+      "dependencies": [
+        3,
+        4,
+        9
+      ],
+      "acceptance_criteria": [
+        "User can log in via SSO in dev; ID token validated; roles assigned from groups",
+        "Protected endpoints enforce roles; unauthorized access returns 403 and is audited"
+      ],
+      "risks": [
+        {
+          "risk": "Group claim size exceeds token limits",
+          "mitigation": "Use groups over Graph API lookup post-login or use custom roles claim"
+        },
+        {
+          "risk": "Clock skew breaks token validation",
+          "mitigation": "Use NTP-synced servers; allow small leeway in JWT validation"
+        }
+      ],
+      "notes": "Acronym introduced: JWT (JSON Web Token)."
+    },
+    {
+      "number": 12,
+      "title": "Core backend APIs and business rules (time, PTO, accruals, overtime)",
+      "objective": "Implement time capture, PTO workflows, and rules engines aligned to policy mapping",
+      "detailed_instructions": [
+        "Implement endpoints: POST /clock-in, POST /clock-out, PATCH /time-entries/:id (edits with reason), GET /timesheets?period=, POST /pto-requests, GET/POST /approvals.",
+        "Enforce constraints: prevent overlapping punches, require reasons for edits, apply rounding policy, auto-insert meal/rest breaks per rules.",
+        "Store timestamps in UTC; log client timezone; compute daily/weekly overtime based on jurisdiction and policy tables.",
+        "Implement accrual engine: scheduled job (e.g., daily at 02:00 server time) to accrue PTO; prorate on hire/termination; cap and carryover rules.",
+        "Add approval workflows: single or multi-level; SLA timers and reminders via email/Slack webhook (internal tooling).",
+        "Create unit tests and service-level tests for rule scenarios using test vectors from step 1.",
+        "Publish an OpenAPI spec; create a Postman collection for QA."
+      ],
+      "prerequisites": [
+        "Policy-to-Engine Mapping",
+        "Auth/RBAC in place"
+      ],
+      "inputs": [
+        "Policy mapping spreadsheet",
+        "Report catalog for data fields"
+      ],
+      "outputs": [
+        "Backend services implementing time/PTO APIs",
+        "Accrual scheduler job",
+        "OpenAPI spec and Postman collection"
+      ],
+      "owner_role": "Backend Engineer",
+      "collaborators": [
+        "Product Manager",
+        "QA Lead"
+      ],
+      "time_estimate_hours_min": 40.0,
+      "time_estimate_hours_max": 80.0,
+      "dependencies": [
+        1,
+        10,
+        11
+      ],
+      "acceptance_criteria": [
+        "Automated tests cover >90% of rule branches for services",
+        "Postman collection passes in CI",
+        "Edge cases (missed punch, edit with reason, overlapping entries) handled and audited"
+      ],
+      "risks": [
+        {
+          "risk": "Complex multi-jurisdiction overtime rules are incorrect",
+          "mitigation": "Table-driven rules with effective dates; review with HR on staging using test cases"
+        },
+        {
+          "risk": "Scheduler collisions cause double-accrual",
+          "mitigation": "Use idempotency keys and transactional upserts"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "number": 13,
+      "title": "Front-end implementation (employee portal, manager dashboard, admin basics)",
+      "objective": "Deliver accessible, responsive UI for employees and managers with essential admin configuration",
+      "detailed_instructions": [
+        "Set up React app structure with routing: /login, /clock, /timesheet, /pto, /approvals, /admin.",
+        "Integrate OIDC login via frontend library; store tokens securely (httpOnly cookies).",
+        "Build Employee views: clock in/out with server time display, daily/weekly view, submit/edit with reason, PTO request form with balance display.",
+        "Build Manager views: team schedule, pending approvals, exceptions, bulk approve/deny with comments.",
+        "Admin basics: configure policies (read-only if needed), manage holidays, view audit logs.",
+        "Apply Material UI; implement accessibility checks with axe-core; ensure keyboard and screen reader support.",
+        "Cross-browser tests on supported list (step 8)."
+      ],
+      "prerequisites": [
+        "Auth and APIs available in dev",
+        "Accessibility standards (step 8)"
+      ],
+      "inputs": [
+        "OpenAPI spec and backend endpoints",
+        "Accessibility and Browser Support Standards"
+      ],
+      "outputs": [
+        "React frontend with core flows for employees/managers/admin",
+        "Automated a11y checks integrated in CI",
+        "E2E test stubs (Cypress/Playwright)"
+      ],
+      "owner_role": "Frontend Engineer",
+      "collaborators": [
+        "UX Designer",
+        "Product Manager"
+      ],
+      "time_estimate_hours_min": 60.0,
+      "time_estimate_hours_max": 100.0,
+      "dependencies": [
+        8,
+        11,
+        12
+      ],
+      "acceptance_criteria": [
+        "Axe audits show no critical violations; keyboard-only navigation works across core flows",
+        "All core flows functional in Chrome/Edge/Safari latest and Firefox ESR",
+        "Visual regressions covered by snapshot tests for key components"
+      ],
+      "risks": [
+        {
+          "risk": "Accessibility retrofits slow velocity",
+          "mitigation": "Adopt accessible components from the start; run axe checks in CI"
+        },
+        {
+          "risk": "Time drift confusion for users",
+          "mitigation": "Show server time prominently; provide tooltip explaining timezone handling"
+        }
+      ],
+      "notes": "Acronym introduced: a11y (accessibility numeronym)."
+    },
+    {
+      "number": 14,
+      "title": "Reporting and payroll/HRIS exports",
+      "objective": "Implement reporting queries, UI, and scheduled exports to payroll/HRIS per specifications",
+      "detailed_instructions": [
+        "Implement reporting SQL with views/materialized views as needed for: period timesheets, overtime summaries, PTO balances/changes, exceptions, approvals audit.",
+        "Build Reports UI with filters (date range, department, manager) and export options (CSV/XLSX).",
+        "Implement SFTP client with SSH key auth for scheduled payroll exports; configurable cron per pay calendar.",
+        "Validate export file formats against vendor sandbox or sample importer; include header/footer if required.",
+        "Log ExportJob records with checksum and transfer status; retries with backoff; alert on failure."
+      ],
+      "prerequisites": [
+        "Report catalog (step 6)",
+        "Integration decision and credentials (step 2)"
+      ],
+      "inputs": [
+        "Signed Report Catalog",
+        "Sandbox API keys or SFTP credentials",
+        "Payroll file layout specs"
+      ],
+      "outputs": [
+        "Reports UI and downloadable files",
+        "Automated scheduled export job to payroll/HRIS",
+        "Export audit logs and checksums"
+      ],
+      "owner_role": "Data Engineer",
+      "collaborators": [
+        "Payroll Lead",
+        "Backend Engineer"
+      ],
+      "time_estimate_hours_min": 24.0,
+      "time_estimate_hours_max": 40.0,
+      "dependencies": [
+        2,
+        6,
+        12,
+        13
+      ],
+      "acceptance_criteria": [
+        "HR/Payroll validate sample exports import successfully into sandbox",
+        "Scheduled job executes on cadence with success logs and retry behavior",
+        "Reports match agreed layouts and totals"
+      ],
+      "risks": [
+        {
+          "risk": "Export rejected by payroll due to edge-case fields",
+          "mitigation": "Add pre-export validation and schema checks; keep manual override export as fallback"
+        },
+        {
+          "risk": "Large reports time out",
+          "mitigation": "Paginate and stream exports; precompute summaries nightly"
+        }
+      ],
+      "notes": ""
+    },
+    {
+      "number": 15,
+      "title": "Security hardening and audit logging completion",
+      "objective": "Complete security controls and comprehensive auditing prior to broader testing",
+      "detailed_instructions": [
+        "Enable HTTPS/TLS everywhere; enforce HSTS and secure headers (CSP, X-Frame-Options, X-Content-Type-Options).",
+        "Implement rate limiting and request size limits on APIs; add CSRF protection for state-changing requests.",
+        "Complete audit logging for all sensitive actions: time edits, approvals, policy changes, export runs; ensure tamper-evident storage.",
+        "Run SAST, DAST, and dependency scans; remediate high/critical findings; document residual risks.",
+        "Add anomaly detection for unusual patterns (e.g., repeated clock-ins at odd hours) with alerts to managers/HR."
+      ],
+      "prerequisites": [
+        "Security baseline from step 4",
+        "Core backend and UI in place"
+      ],
+      "inputs": [
+        "Security/privacy checklist",
+        "Audit standards document"
+      ],
+      "outputs": [
+        "Security configuration (code and infra)",
+        "Audit logs available in SIEM with dashboards",
+        "Vulnerability scan reports"
+      ],
+      "owner_role": "Security Lead",
+      "collaborators": [
+        "Backend Engineer",
+        "DevOps Engineer"
+      ],
+      "time_estimate_hours_min": 16.0,
+      "time_estimate_hours_max": 32.0,
+      "dependencies": [
+        4,
+        12,
+        13
+      ],
+      "acceptance_criteria": [
+        "No high/critical unresolved findings in SAST/DAST",
+        "Audit events visible in SIEM with required fields and retention",
+        "Penetration test or peer security review completed with sign-off"
+      ],
+      "risks": [
+        {
+          "risk": "Performance impact from security middleware",
+          "mitigation": "Benchmark and tune limits; use async logging"
+        },
+        {
+          "risk": "Audit logs contain PII in excess",
+          "mitigation": "Redact sensitive fields; log references/IDs instead of full content"
+        }
+      ],
+      "notes": "Acronym introduced: HSTS (HTTP Strict Transport Security), CSP (Content Security Policy), CSRF (Cross-Site Request Forgery), SIEM (Security Information and Event Management)."
+    },
+    {
+      "number": 16,
+      "title": "Data import and backfill (employees, balances, holidays)",
+      "objective": "Migrate initial data from HR/Payroll exports and spreadsheets into the new system",
+      "detailed_instructions": [
+        "Collect source files: employee roster with unique IDs, department/manager mappings, starting PTO balances, holiday calendars.",
+        "Create idempotent ETL (Extract, Transform, Load) scripts in Node.js or dbt to transform to target schema; include validation rules.",
+        "Dry-run in stage: import 5–10% sample; reconcile counts and spot-check 20 employees’ balances vs source.",
+        "Full load in stage; then in prod during a freeze window; capture checksums and row counts; backup before load."
+      ],
+      "prerequisites": [
+        "Schema in place (step 10)",
+        "Report totals to reconcile (step 6)"
+      ],
+      "inputs": [
+        "HR exports (CSV)",
+        "Mapping of IDs and departments",
+        "Source holiday list"
+      ],
+      "outputs": [
+        "Loaded Employee, Department, Holiday, AccrualBalance records",
+        "Import logs and reconciliation report"
+      ],
+      "owner_role": "Data Engineer",
+      "collaborators": [
+        "HRIS Administrator",
+        "QA Lead"
+      ],
+      "time_estimate_hours_min": 16.0,
+      "time_estimate_hours_max": 32.0,
+      "dependencies": [
+        10,
+        14
+      ],
+      "acceptance_criteria": [
+        "Record counts match within 0.1% tolerance; all key fields populated",
+        "Random sample reconciliation passes; discrepancies documented/resolved",
+        "Imports are idempotent; re-running does not duplicate records"
+      ],
+      "risks": [
+        {
+          "risk": "Dirty source data (duplicates/missing IDs)",
+          "mitigation": "Pre-clean with HR; add validation and reject lists"
+        },
+        {
+          "risk": "Timezone or date format mismatches",
+          "mitigation": "Normalize to ISO-8601 UTC on ingest; add format detection"
+        }
+      ],
+      "notes": "Acronym introduced: ETL (Extract, Transform, Load)."
+    },
+    {
+      "number": 17,
+      "title": "End-to-end testing, performance, and UAT",
+      "objective": "Verify functional correctness, non-functional performance targets, and obtain User Acceptance Testing sign-off",
+      "detailed_instructions": [
+        "Author E2E tests with Playwright/Cypress covering employee and manager happy paths and key edge cases.",
+        "Load test APIs with k6: target p95 latency <300ms for read ops, <500ms for write ops at expected concurrency (e.g., 200 RPS bursts at top-of-hour).",
+        "Run staging cutover rehearsal: simulate pay period close, approvals, export to sandbox payroll.",
+        "Conduct UAT with pilot departments (min 30 users): collect feedback via survey; triage issues; fix blockers."
+      ],
+      "prerequisites": [
+        "Core features built (steps 12–15)",
+        "Data loaded in stage (step 16)"
+      ],
+      "inputs": [
+        "Postman collection",
+        "Test accounts and roles",
+        "Pilot user list"
+      ],
+      "outputs": [
+        "E2E test suite and reports",
+        "Load test results and tuning changes",
+        "Signed UAT report"
+      ],
+      "owner_role": "QA Lead",
+      "collaborators": [
+        "Product Manager",
+        "Engineering Lead",
+        "Payroll Lead"
+      ],
+      "time_estimate_hours_min": 24.0,
+      "time_estimate_hours_max": 48.0,
+      "dependencies": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "acceptance_criteria": [
+        "E2E tests green with >90% scenario coverage for core flows",
+        "Performance targets met in stage; no critical errors under load",
+        "UAT sign-off by HR and at least 3 managers from different departments"
+      ],
+      "risks": [
+        {
+          "risk": "Performance regressions after fixes",
+          "mitigation": "Set performance budgets in CI; run k6 smoke on each release"
+        },
+        {
+          "risk": "Pilot feedback requires UX changes",
+          "mitigation": "Timebox fixes to critical usability blockers; defer enhancements to minor releases"
+        }
+      ],
+      "notes": "Acronym introduced: RPS (Requests Per Second), UAT (User Acceptance Testing)."
+    },
+    {
+      "number": 18,
+      "title": "Launch, training, and hypercare",
+      "objective": "Roll out to all employees with training, support, and monitoring to ensure stable adoption",
+      "detailed_instructions": [
+        "Plan phased rollout by department/site; enable via feature flags; announce timelines via internal comms.",
+        "Publish training: 5-minute video for employees, 10-minute manager guide, FAQ page on intranet.",
+        "Set up support channel (Slack) and ticket routing; define incident SLAs and on-call rotation for first 2 weeks (hypercare).",
+        "Monitor adoption dashboard (daily active users, on-time punches, approval delays); hold daily standups during hypercare; exit criteria review."
+      ],
+      "prerequisites": [
+        "UAT sign-off (step 17)",
+        "Security sign-off (step 15)"
+      ],
+      "inputs": [
+        "Training materials",
+        "Runbooks and support playbooks"
+      ],
+      "outputs": [
+        "Feature flags enabled per cohort",
+        "Training assets published",
+        "Hypercare summary report with KPIs"
+      ],
+      "owner_role": "Product Manager",
+      "collaborators": [
+        "HR Business Partner",
+        "Support Lead",
+        "Engineering Lead"
+      ],
+      "time_estimate_hours_min": 12.0,
+      "time_estimate_hours_max": 24.0,
+      "dependencies": [
+        15,
+        17
+      ],
+      "acceptance_criteria": [
+        ">80% daily active usage within first week of each cohort",
+        "No Sev-1 incidents during hypercare or resolved within SLA",
+        "Hypercare exit sign-off from HR and Support"
+      ],
+      "risks": [
+        {
+          "risk": "Low adoption due to change resistance",
+          "mitigation": "Manager-first rollout, clear benefits, and quick reference guides"
+        },
+        {
+          "risk": "Unexpected edge cases at scale",
+          "mitigation": "Stagger cohorts; quick patch releases with canary deployments"
+        }
+      ],
+      "notes": "Hypercare = heightened support period post-launch."
+    }
+  ],
+  "critical_path": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+  ],
+  "swimlanes": [
+    {
+      "owner_role": "Product Manager",
+      "step_numbers": [
+        1,
+        6,
+        18
+      ]
+    },
+    {
+      "owner_role": "Technical Program Manager",
+      "step_numbers": [
+        2
+      ]
+    },
+    {
+      "owner_role": "IT IAM Lead",
+      "step_numbers": [
+        3
+      ]
+    },
+    {
+      "owner_role": "Security Lead",
+      "step_numbers": [
+        4,
+        15
+      ]
+    },
+    {
+      "owner_role": "DevOps Engineer",
+      "step_numbers": [
+        5,
+        9
+      ]
+    },
+    {
+      "owner_role": "Engineering Lead",
+      "step_numbers": [
+        7,
+        9
+      ]
+    },
+    {
+      "owner_role": "Backend Engineer",
+      "step_numbers": [
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "owner_role": "Frontend Engineer",
+      "step_numbers": [
+        13
+      ]
+    },
+    {
+      "owner_role": "Data Engineer",
+      "step_numbers": [
+        14,
+        16
+      ]
+    },
+    {
+      "owner_role": "QA Lead",
+      "step_numbers": [
+        8,
+        17
+      ]
+    }
+  ]
+}
